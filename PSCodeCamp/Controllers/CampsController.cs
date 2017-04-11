@@ -27,7 +27,7 @@ namespace PSCodeCamp.Controllers
             return Ok(camps);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id}", Name = "CampGet")]
         public IActionResult Get(int id, bool includeSpeakers = false)
         {
             try
@@ -57,5 +57,24 @@ namespace PSCodeCamp.Controllers
             return BadRequest();
         }
 
+
+        [HttpPost]
+        public async Task<IActionResult> Post([FromBody]Camp model)
+        {
+            try
+            {
+                _reposotory.Add(model);
+                if (await _reposotory.SaveAllAsync())
+                {
+                    var newUri = Url.Link("CampGet", new { id = model.Id });
+                    return Created(newUri, model);
+                }
+            }
+            catch (Exception)
+            {
+            }
+
+            return BadRequest();
+        }
     }
 }
