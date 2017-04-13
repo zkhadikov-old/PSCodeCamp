@@ -1,6 +1,5 @@
 using MyCodeCamp.Data.Entities;
 using AutoMapper;
-using System;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using PSCodeCamp.Controllers;
