@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace PSCodeCamp.Controllers
 {
     [Route("api/[controller]")]
-    public class CampsController : Controller
+    public class CampsController : BaseController
     {
         private ICampRepository _reposotory;
         private ILogger<CampsController> _logger;
@@ -55,7 +55,7 @@ namespace PSCodeCamp.Controllers
                     return NotFound($"Camp {id} was not found");
                 }
 
-                return Ok(_mapper.Map<CampModel>(camp, opt => opt.Items["UrlHelper"] = this.Url));
+                return Ok(_mapper.Map<CampModel>(camp));
             }
             catch
             {
