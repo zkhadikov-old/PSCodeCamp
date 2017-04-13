@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 
 using MyCodeCamp.Data;
+using AutoMapper;
 
 namespace PSCodeCamp
 {
@@ -34,6 +35,9 @@ namespace PSCodeCamp
             services.AddDbContext<CampContext>(ServiceLifetime.Scoped);
             services.AddScoped<ICampRepository, CampRepository>();
             services.AddTransient<CampDbInitializer>();
+
+
+            services.AddAutoMapper();
 
             // Add framework services.
             services.AddMvc()

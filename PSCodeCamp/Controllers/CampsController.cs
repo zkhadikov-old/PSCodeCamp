@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MyCodeCamp.Data;
 using MyCodeCamp.Data.Entities;
+using PSCodeCamp.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,11 +16,13 @@ namespace PSCodeCamp.Controllers
     {
         private ICampRepository _reposotory;
         private ILogger<CampsController> _logger;
+        private IMapper _mapper;
 
-        public CampsController(ICampRepository repository, ILogger<CampsController> logger)
+        public CampsController(ICampRepository repository, ILogger<CampsController> logger, IMapper mapper)
         {
             _reposotory = repository;
             _logger = logger;
+            _mapper = mapper;
         }
 
         [HttpGet("")]
@@ -27,7 +31,7 @@ namespace PSCodeCamp.Controllers
             var camps = _reposotory.GetAllCamps();
 
 
-            return Ok(camps);
+            return Ok(_mapper.Map<IEnumerable<CampModel>>(camps));
         }
 
         [HttpGet("{id}", Name = "CampGet")]
@@ -51,7 +55,7 @@ namespace PSCodeCamp.Controllers
                     return NotFound($"Camp {id} was not found");
                 }
 
-                return Ok(camp);
+                return Ok(_mapper.Map<CampModel>(camp, opt => opt.Items["UrlHelper"] = this.Url));
             }
             catch
             {
@@ -143,7 +147,7 @@ namespace PSCodeCamp.Controllers
             }
             catch (System.Exception)
             {
-                
+
                 throw;
             }
 
