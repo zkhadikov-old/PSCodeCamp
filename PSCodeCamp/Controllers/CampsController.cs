@@ -34,8 +34,8 @@ namespace PSCodeCamp.Controllers
             return Ok(_mapper.Map<IEnumerable<CampModel>>(camps));
         }
 
-        [HttpGet("{id}", Name = "CampGet")]
-        public IActionResult Get(int id, bool includeSpeakers = false)
+        [HttpGet("{moniker}", Name = "CampGet")]
+        public IActionResult Get(string moniker, bool includeSpeakers = false)
         {
             try
             {
@@ -43,16 +43,16 @@ namespace PSCodeCamp.Controllers
 
                 if (includeSpeakers)
                 {
-                    camp = _reposotory.GetCampWithSpeakers(id);
+                    camp = _reposotory.GetCampByMonikerWithSpeakers(moniker);
                 }
                 else
                 {
-                    camp = _reposotory.GetCamp(id);
+                    camp = _reposotory.GetCampByMoniker(moniker);
                 }
 
                 if (camp == null)
                 {
-                    return NotFound($"Camp {id} was not found");
+                    return NotFound($"Camp {moniker} was not found");
                 }
 
                 return Ok(_mapper.Map<CampModel>(camp));
@@ -66,17 +66,19 @@ namespace PSCodeCamp.Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody]Camp model)
+        public async Task<IActionResult> Post([FromBody]CampModel model)
         {
             try
             {
                 _logger.LogInformation("Create a new Code Camp");
 
-                _reposotory.Add(model);
+                var camp = _mapper.Map<Camp>(model);
+
+                _reposotory.Add(camp);
                 if (await _reposotory.SaveAllAsync())
                 {
-                    var newUri = Url.Link("CampGet", new { id = model.Id });
-                    return Created(newUri, model);
+                    var newUri = Url.Link("CampGet", new { moniker = model.Moniker });
+                    return Created(newUri, _mapper.Map<CampModel>(camp));
                 }
                 else
                 {

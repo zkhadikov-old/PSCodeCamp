@@ -18,7 +18,7 @@ namespace PSCodeCamp.Models
         string IValueResolver<Camp, CampModel, string>.Resolve(Camp source, CampModel destination, string destMember, ResolutionContext context)
         {
                 var url = (IUrlHelper)_httpContextAccessor.HttpContext.Items[BaseController.UrlHelper];
-                return url.Link("CampGet", new { id = source.Id });
+                return url.Link("CampGet", new { moniker = source.Moniker });
         }
     }
 }
