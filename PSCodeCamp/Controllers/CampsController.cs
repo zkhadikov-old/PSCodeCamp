@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MyCodeCamp.Data;
 using MyCodeCamp.Data.Entities;
+using PSCodeCamp.Filters;
 using PSCodeCamp.Models;
 using System;
 using System.Collections.Generic;
@@ -12,6 +13,7 @@ using System.Threading.Tasks;
 namespace PSCodeCamp.Controllers
 {
     [Route("api/[controller]")]
+    [ValidateModel]
     public class CampsController : BaseController
     {
         private ICampRepository _reposotory;
@@ -70,12 +72,6 @@ namespace PSCodeCamp.Controllers
         {
             try
             {
-
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
                 _logger.LogInformation("Create a new Code Camp");
 
                 var camp = _mapper.Map<Camp>(model);
@@ -100,15 +96,10 @@ namespace PSCodeCamp.Controllers
         }
 
         [HttpPut("{moniker}")]
-        public async Task<IActionResult> Put(string moniker, [FromBody] Camp model)
+        public async Task<IActionResult> Put(string moniker, [FromBody] CampModel model)
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
                 var oldCamp = _reposotory.GetCampByMoniker(moniker);
                 if (oldCamp == null)
                 {
