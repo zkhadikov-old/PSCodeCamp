@@ -39,7 +39,22 @@ namespace PSCodeCamp
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddAutoMapper();
 
-            
+            services.AddCors(cfg => 
+            {
+                cfg.AddPolicy("PyPolicy", bldr => 
+                {
+                    bldr.AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .WithOrigins("http://jedox.com");
+                });
+
+                cfg.AddPolicy("AnyGET", bldr =>
+                {
+                    bldr.AllowAnyHeader()
+                    .WithMethods("GET")
+                    .AllowAnyOrigin();
+                });
+            });
 
             // Add framework services.
             services.AddMvc(opt => 
@@ -62,6 +77,13 @@ namespace PSCodeCamp
         {
             loggerFactory.AddConsole(_config.GetSection("Logging"));
             loggerFactory.AddDebug();
+
+            //app.UseCors(cfg =>
+            //{
+            //    cfg.AllowAnyHeader()
+            //    .AllowAnyMethod()
+            //    .WithOrigins("some host");
+            //});
 
             app.UseMvc(config =>
             {
