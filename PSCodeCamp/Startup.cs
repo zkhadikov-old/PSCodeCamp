@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 
 using MyCodeCamp.Data;
 using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 
 namespace PSCodeCamp
 {
@@ -19,10 +20,13 @@ namespace PSCodeCamp
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
                 .AddEnvironmentVariables();
+
+            _env = env;
             _config = builder.Build();
         }
 
         IConfigurationRoot _config;
+        private IHostingEnvironment _env;
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -35,8 +39,17 @@ namespace PSCodeCamp
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddAutoMapper();
 
+            
+
             // Add framework services.
-            services.AddMvc()
+            services.AddMvc(opt => 
+            {
+                if (!_env.IsProduction())
+                {
+                    opt.SslPort = 44352;
+                }
+                opt.Filters.Add(new RequireHttpsAttribute());
+            })
                 .AddJsonOptions(opt =>
                 { opt.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore; });
         }
