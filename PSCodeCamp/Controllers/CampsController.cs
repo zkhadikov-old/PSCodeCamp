@@ -70,6 +70,12 @@ namespace PSCodeCamp.Controllers
         {
             try
             {
+
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
                 _logger.LogInformation("Create a new Code Camp");
 
                 var camp = _mapper.Map<Camp>(model);
@@ -93,51 +99,52 @@ namespace PSCodeCamp.Controllers
             return BadRequest();
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] Camp model)
+        [HttpPut("{moniker}")]
+        public async Task<IActionResult> Put(string moniker, [FromBody] Camp model)
         {
             try
             {
-                var oldCamp = _reposotory.GetCamp(id);
-                if (oldCamp == null)
+                if (!ModelState.IsValid)
                 {
-                    return NotFound($"Could not found a camp with an ID of {id}");
+                    return BadRequest(ModelState);
                 }
 
-                // map model to the oldcamp
-                oldCamp.Name = model.Name ?? oldCamp.Name;
-                oldCamp.Description = model.Description ?? oldCamp.Description;
-                oldCamp.Location = model.Location ?? oldCamp.Location;
-                oldCamp.Length = model.Length > 0 ? model.Length : oldCamp.Length;
+                var oldCamp = _reposotory.GetCampByMoniker(moniker);
+                if (oldCamp == null)
+                {
+                    return NotFound($"Could not found a camp with an moniker of {moniker}");
+                }
+
+                _mapper.Map(model, oldCamp);
 
                 if (await _reposotory.SaveAllAsync())
                 {
-                    return Ok(oldCamp);
+                    return Ok(_mapper.Map<CampModel>(model));
                 }
                 else
                 {
-                    _logger.LogWarning("Could not save Camp to the database");
+                    _logger.LogWarning($"Could not save Camp with moniker {moniker} to the database");
                 }
 
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
+                _logger.LogError($"Couldn't update Campw with { moniker} to the database");
                 throw;
             }
 
             return BadRequest("Couldn't update Camp");
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
+        [HttpDelete("{moniker}")]
+        public async Task<IActionResult> Delete(string moniker)
         {
             try
             {
-                var oldCamp = _reposotory.GetCamp(id);
+                var oldCamp = _reposotory.GetCampByMoniker(moniker);
                 if (oldCamp == null)
                 {
-                    return NotFound($"Could not found a camp with an ID of {id}");
+                    return NotFound($"Could not found a camp with an ID of {moniker}");
                 }
 
                 _reposotory.Delete(oldCamp);
@@ -149,7 +156,6 @@ namespace PSCodeCamp.Controllers
             }
             catch (System.Exception)
             {
-
                 throw;
             }
 
