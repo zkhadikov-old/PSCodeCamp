@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MyCodeCamp.Data;
@@ -18,21 +20,24 @@ namespace PSCodeCamp.Controllers
         private ICampRepository _repository;
         private ILogger<SpeakersController> _logger;
         private IMapper _mapper;
+        private UserManager<CampUser> _userManager;
 
         public SpeakersController(ICampRepository repository,
             ILogger<SpeakersController> logger,
-            IMapper mapper)
+            IMapper mapper,
+            UserManager<CampUser> userManager)
         {
             _repository = repository;
             _logger = logger;
             _mapper = mapper;
+            _userManager = userManager;
         }
 
 
         [HttpGet]
         public IActionResult Get(string moniker, bool includeTalks = false)
         {
-            var speakers = includeTalks ? _repository.GetSpeakersByMonikerWithTalks(moniker) :  _repository.GetSpeakersByMoniker(moniker);
+            var speakers = includeTalks ? _repository.GetSpeakersByMonikerWithTalks(moniker) : _repository.GetSpeakersByMoniker(moniker);
 
             return Ok(_mapper.Map<IEnumerable<SpeakerModel>>(speakers));
         }
@@ -55,6 +60,7 @@ namespace PSCodeCamp.Controllers
             return Ok(_mapper.Map<SpeakerModel>(speaker));
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> Post(string moniker, [FromBody]SpeakerModel model)
         {
@@ -69,12 +75,18 @@ namespace PSCodeCamp.Controllers
                 var speaker = _mapper.Map<Speaker>(model);
                 speaker.Camp = camp;
 
-                _repository.Add(speaker);
-
-                if (await _repository.SaveAllAsync())
+                var campUser = await _userManager.FindByNameAsync(this.User.Identity.Name);
+                if (campUser != null)
                 {
-                    var url = Url.Link("SpeakerGet", new { moniker = camp.Moniker, id = speaker.Id });
-                    return Created(url, _mapper.Map<SpeakerModel>(speaker));
+                    speaker.User = campUser;
+
+                    _repository.Add(speaker);
+
+                    if (await _repository.SaveAllAsync())
+                    {
+                        var url = Url.Link("SpeakerGet", new { moniker = camp.Moniker, id = speaker.Id });
+                        return Created(url, _mapper.Map<SpeakerModel>(speaker));
+                    }
                 }
             }
             catch (Exception ex)
@@ -85,6 +97,7 @@ namespace PSCodeCamp.Controllers
             return BadRequest("Could not add new speaker");
         }
 
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(string moniker, int id, [FromBody] SpeakerModel model)
         {
@@ -102,6 +115,11 @@ namespace PSCodeCamp.Controllers
                     return BadRequest("Speaker and Camp do not match");
                 }
 
+                if (speaker.User.UserName != this.User.Identity.Name)
+                {
+                    return Forbid();
+                }
+
                 _mapper.Map(model, speaker);
 
                 if (await _repository.SaveAllAsync())
@@ -117,6 +135,7 @@ namespace PSCodeCamp.Controllers
             return BadRequest("Could not update speaker");
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string moniker, int id)
         {
@@ -132,6 +151,11 @@ namespace PSCodeCamp.Controllers
                 if (speaker.Camp.Moniker != moniker)
                 {
                     return BadRequest("Speaker and Camp do not match");
+                }
+
+                if (speaker.User.UserName != this.User.Identity.Name)
+                {
+                    return Forbid();
                 }
 
                 _repository.Delete(speaker);

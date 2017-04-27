@@ -8,6 +8,10 @@ using Microsoft.Extensions.Logging;
 using MyCodeCamp.Data;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using MyCodeCamp.Data.Entities;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Threading.Tasks;
 
 namespace PSCodeCamp
 {
@@ -35,26 +39,57 @@ namespace PSCodeCamp
             services.AddDbContext<CampContext>(ServiceLifetime.Scoped);
             services.AddScoped<ICampRepository, CampRepository>();
             services.AddTransient<CampDbInitializer>();
+            services.AddTransient<CampIdentityInitializer>();
 
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddAutoMapper();
 
-            services.AddCors(cfg => 
-            {
-                cfg.AddPolicy("PyPolicy", bldr => 
-                {
-                    bldr.AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .WithOrigins("http://jedox.com");
-                });
+            services.AddIdentity<CampUser, IdentityRole>()
+                .AddEntityFrameworkStores<CampContext>();
 
-                cfg.AddPolicy("AnyGET", bldr =>
+            services.Configure<IdentityOptions>(config =>
+            {
+                config.Cookies.ApplicationCookie.Events = new CookieAuthenticationEvents()
                 {
-                    bldr.AllowAnyHeader()
-                    .WithMethods("GET")
-                    .AllowAnyOrigin();
-                });
+                    OnRedirectToLogin = (ctx) =>
+                    {
+                        if (ctx.Request.Path.StartsWithSegments("/api") && ctx.Response.StatusCode == 200)
+                        {
+                            // Unathorized
+                            ctx.Response.StatusCode = 401;
+                        }
+
+                        return Task.CompletedTask;
+                    },
+
+                    OnRedirectToAccessDenied = (ctx) =>
+                    {
+                        if (ctx.Request.Path.StartsWithSegments("/api") && ctx.Response.StatusCode == 200)
+                        {
+                            ctx.Response.StatusCode = 403;
+                        }
+
+                        return Task.CompletedTask;
+                    }
+                };
             });
+
+            //services.AddCors(cfg => 
+            //{
+            //    cfg.AddPolicy("PyPolicy", bldr => 
+            //    {
+            //        bldr.AllowAnyHeader()
+            //        .AllowAnyMethod()
+            //        .WithOrigins("http://jedox.com");
+            //    });
+
+            //    cfg.AddPolicy("AnyGET", bldr =>
+            //    {
+            //        bldr.AllowAnyHeader()
+            //        .WithMethods("GET")
+            //        .AllowAnyOrigin();
+            //    });
+            //});
 
             // Add framework services.
             services.AddMvc(opt => 
@@ -73,10 +108,13 @@ namespace PSCodeCamp
         public void Configure(IApplicationBuilder app,
             IHostingEnvironment env,
             ILoggerFactory loggerFactory,
-            CampDbInitializer seeder)
+            CampDbInitializer seeder,
+            CampIdentityInitializer identitySeeder)
         {
             loggerFactory.AddConsole(_config.GetSection("Logging"));
             loggerFactory.AddDebug();
+
+            app.UseIdentity();
 
             //app.UseCors(cfg =>
             //{
@@ -91,6 +129,7 @@ namespace PSCodeCamp
             });
 
             seeder.Seed().Wait();
+            identitySeeder.Seed().Wait();
         }
     }
 }

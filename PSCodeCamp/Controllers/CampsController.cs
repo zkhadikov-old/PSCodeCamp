@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -13,7 +14,8 @@ using System.Threading.Tasks;
 
 namespace PSCodeCamp.Controllers
 {
-    [EnableCors("AnyGet")]
+    //[EnableCors("AnyGet")]
+    [Authorize]
     [Route("api/[controller]")]
     [ValidateModel]
     public class CampsController : BaseController
