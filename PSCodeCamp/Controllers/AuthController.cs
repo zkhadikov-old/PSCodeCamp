@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using MyCodeCamp.Data;
@@ -21,18 +22,21 @@ namespace PSCodeCamp.Controllers
         private UserManager<CampUser> _userManager;
         private IPasswordHasher<CampUser> _hasher;
         private ILogger<AuthController> _logger;
+        private IConfigurationRoot _config;
 
         public AuthController(CampContext context,
             SignInManager<CampUser> signInManager,
             UserManager<CampUser> userManager,
             IPasswordHasher<CampUser> hasher,
-            ILogger<AuthController> logger)
+            ILogger<AuthController> logger,
+            IConfigurationRoot config)
         {
             _context = context;
             _signInManager = signInManager;
             _userManager = userManager;
             _hasher = hasher;
             _logger = logger;
+            _config = config;
         }
 
         [ValidateModel]
@@ -74,12 +78,12 @@ namespace PSCodeCamp.Controllers
                             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
                         };
 
-                        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("MYVERYLONGSECURITYKEY"));
+                        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Tokens:Key"]));
                         var cred = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
                         var token = new JwtSecurityToken(
-                            issuer: "http://www.jedox.com",
-                            audience: "http://www.jedox.com",
+                            issuer: _config["Tokens:Issuer"],
+                            audience: _config["Tokens:Audience"],
                             claims: claims,
                             expires: DateTime.UtcNow.AddMinutes(15),
                             signingCredentials: cred);
