@@ -9,6 +9,7 @@ using PSCodeCamp.Filters;
 using PSCodeCamp.Models;
 using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -72,11 +73,16 @@ namespace PSCodeCamp.Controllers
                 {
                     if (_hasher.VerifyHashedPassword(user, user.PasswordHash, model.Password) == PasswordVerificationResult.Success)
                     {
+                        var userClaims = await _userManager.GetClaimsAsync(user);
+
                         var claims = new[]
                         {
                             new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
-                            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-                        };
+                            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                            new Claim(JwtRegisteredClaimNames.GivenName, user.FirstName),
+                            new Claim(JwtRegisteredClaimNames.FamilyName, user.LastName),
+                            new Claim(JwtRegisteredClaimNames.Email, user.Email)
+                        }.Union(userClaims);
 
                         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Tokens:Key"]));
                         var cred = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
