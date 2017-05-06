@@ -9,12 +9,15 @@ using PSCodeCamp.Filters;
 using PSCodeCamp.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PSCodeCamp.Controllers
 {
     [Route("api/camps/{moniker}/speakers")]
     [ValidateModel]
+    [ApiVersion("1.0")]
+    [ApiVersion("1.1")]
     public class SpeakersController : BaseController
     {
         private ICampRepository _repository;
@@ -33,13 +36,22 @@ namespace PSCodeCamp.Controllers
             _userManager = userManager;
         }
 
-
         [HttpGet]
+        [MapToApiVersion("1.0")]
         public IActionResult Get(string moniker, bool includeTalks = false)
         {
             var speakers = includeTalks ? _repository.GetSpeakersByMonikerWithTalks(moniker) : _repository.GetSpeakersByMoniker(moniker);
 
             return Ok(_mapper.Map<IEnumerable<SpeakerModel>>(speakers));
+        }
+
+        [HttpGet]
+        [MapToApiVersion("1.1")]
+        public IActionResult GetV11(string moniker, bool includeTalks = false)
+        {
+            var speakers = includeTalks ? _repository.GetSpeakersByMonikerWithTalks(moniker) : _repository.GetSpeakersByMoniker(moniker);
+
+            return Ok(new { count = speakers.Count(), results = _mapper.Map<IEnumerable<SpeakerModel>>(speakers) });
         }
 
         [HttpGet("{id}", Name = "SpeakerGet")]
