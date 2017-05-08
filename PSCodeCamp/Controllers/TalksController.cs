@@ -58,15 +58,13 @@ namespace PSCodeCamp.Controllers
 
             if (talk.Speaker.Id != speakerId || talk.Speaker.Camp.Moniker != moniker) return BadRequest("Invalid talk for the speaker selected");
 
-            var etag = Convert.ToBase64String(talk.RowVersion);
-
-            Response.Headers.Add("ETag", etag);
-            _cashe.Set($"Talk-{talk.Id}-{etag}", talk);
+            AddETag(talk);
 
             return Ok(_mapper.Map<TalkModel>(talk));
         }
 
-        [HttpPost()]
+
+        [HttpPost(Name = "CreateTalk")]
         public async Task<IActionResult> Post(string moniker, int speakerId, [FromBody] TalkModel model)
         {
             try
@@ -81,6 +79,7 @@ namespace PSCodeCamp.Controllers
 
                     if (await _repo.SaveAllAsync())
                     {
+                        AddETag(talk);
                         return Created(Url.Link("GetTalk", new { moniker = moniker, speakerId = speakerId, id = talk.Id }), _mapper.Map<TalkModel>(talk));
                     }
                 }
@@ -95,7 +94,7 @@ namespace PSCodeCamp.Controllers
             return BadRequest("Failed to save new talk");
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("{id}", Name ="UpdateTalk")]
         public async Task<IActionResult> Put(string moniker, int speakerId, int id, [FromBody] TalkModel model)
         {
             try
@@ -103,11 +102,14 @@ namespace PSCodeCamp.Controllers
                 var talk = _repo.GetTalk(id);
                 if (talk == null) return NotFound();
 
+                if (CheckETagMatch(talk)) return StatusCode((int)HttpStatusCode.PreconditionFailed);
+
                 _mapper.Map(model, talk);
 
                 if (await _repo.SaveAllAsync())
                 {
-                    return Ok(_mapper.Map<TalkModel>(talk));
+                    AddETag(talk)
+;                   return Ok(_mapper.Map<TalkModel>(talk));
                 }
 
             }
@@ -120,6 +122,23 @@ namespace PSCodeCamp.Controllers
             return BadRequest("Failed to update talk");
         }
 
+        private bool CheckETagMatch(Talk talk)
+        {
+            if (Request.Headers.ContainsKey("If-Match"))
+            {
+                var etag = Request.Headers["If-Match"].First();
+                if (etag != Convert.ToBase64String(talk.RowVersion))
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string moniker, int speakerId, int id)
         {
@@ -127,6 +146,8 @@ namespace PSCodeCamp.Controllers
             {
                 var talk = _repo.GetTalk(id);
                 if (talk == null) return NotFound();
+
+                if (CheckETagMatch(talk)) return StatusCode((int)HttpStatusCode.PreconditionFailed);
 
                 _repo.Delete(talk);
 
@@ -143,6 +164,13 @@ namespace PSCodeCamp.Controllers
             }
 
             return BadRequest("Failed to delete talk");
+        }
+        private void AddETag(Talk talk)
+        {
+            var etag = Convert.ToBase64String(talk.RowVersion);
+
+            Response.Headers.Add("ETag", etag);
+            _cashe.Set($"Talk-{talk.Id}-{etag}", talk);
         }
 
     }

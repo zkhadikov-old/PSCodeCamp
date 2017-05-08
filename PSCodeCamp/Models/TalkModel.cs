@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace PSCodeCamp.Models
@@ -16,5 +18,6 @@ namespace PSCodeCamp.Models
         public string Prerequisites { get; set; }
         public DateTime StartingTime { get; set; } = DateTime.Now;
         public string Room { get; set; }
+        public ICollection<LinkModel> Links { get; set; }
     }
 }
