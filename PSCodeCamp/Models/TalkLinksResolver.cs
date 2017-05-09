@@ -42,6 +42,12 @@ namespace PSCodeCamp.Models
                     Href = url.Link("CreateTalk", new { moniker = source.Speaker.Camp.Moniker,
                         speakerId = source.Speaker.Id}),
                     Verb = "POST"
+                },
+                new LinkModel()
+                {
+                    Rel = "Speaker",
+                    Href = url.Link("SpeakerGet", new { moniker = source.Speaker.Camp.Moniker,
+                        id = source.Speaker.Id})
                 }
             };
         }
